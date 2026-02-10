@@ -14,6 +14,7 @@ const { initAchievements, evaluateAchievements, unlock } = require('./achievemen
 const { buildEndingShareCard, buildChallengeShareCard, guestEntry } = require('./wechat');
 const { parseCustomInput, buildQuestionSuggestions } = require('./intent');
 const { generateBackstory } = require('./backstory');
+const { refreshFriendBoard } = require('./leaderboard');
 
 function createNewState() {
   const scenario = loadScenario('the_haunting');
@@ -40,7 +41,7 @@ function createNewState() {
     suggestions: [],
     finished: false,
     ending: '',
-    meta: { share_cards: {}, achievements: [] },
+    meta: { share_cards: {}, achievements: [], friend_board: [] },
     ui: { suggestion_expanded: false, question_suggestions: [] },
   };
 }
@@ -62,6 +63,7 @@ async function finalizeDraftSelection(state) {
   state.character_drafts = [];
   initAchievements(state);
   state.ui.question_suggestions = buildQuestionSuggestions(state);
+  state.meta.friend_board = await refreshFriendBoard(state);
 }
 
 function checkEndings(state, scenario) {
@@ -233,6 +235,11 @@ async function nextTurn(state, playerAction) {
     state.meta.share_cards.ending = buildEndingShareCard(state);
   } else {
     state.meta.share_cards.challenge = buildChallengeShareCard();
+  }
+
+
+  if (state.finished || state.progress.current_round % 3 === 0) {
+    state.meta.friend_board = await refreshFriendBoard(state);
   }
 
   state.ui.question_suggestions = buildQuestionSuggestions(state);

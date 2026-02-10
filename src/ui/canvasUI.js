@@ -157,6 +157,16 @@ class CanvasUI {
       this.drawButton(bx, by, bw, 28, item.label, item.action, '#243654', '13px sans-serif');
     });
 
+    const board = (this.state.meta && this.state.meta.friend_board) || [];
+    const boardY = y + 4 * 34 + 8;
+    ctx.fillStyle = '#9cc6ff';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('🏅 朋友榜（本地+微信可用时云端）', 16, boardY);
+    board.slice(0, 3).forEach((r, i) => {
+      ctx.fillStyle = '#7fa4d8';
+      ctx.fillText(`${i + 1}. ${r.name}  分:${r.score}  SAN:${r.san}  回合:${r.rounds}`, 16, boardY + 18 + i * 16);
+    });
+
     if (this.state.finished) {
       ctx.fillStyle = '#ffdd88';
       this.wrapText(`结局: ${this.state.ending}`, 16, height - 90, width - 32, 16, 2);
