@@ -140,9 +140,13 @@ class CanvasUI {
     const latest = this.state.log[this.state.log.length - 1];
     const narrative = latest ? latest.narrative : '雨夜里，你们收到第一份委托。';
     ctx.fillStyle = '#a6accd';
-    this.wrapText(narrative, 16, 112, width - 32, 18, 4);
+    this.wrapText(narrative, 16, 112, width - 32, 18, 2);
 
-    let y = this.renderQuestionPanel(188);
+    const story = inv.background_story || '背景故事生成中...';
+    ctx.fillStyle = '#8ba2c7';
+    this.wrapText(story, 16, 158, width - 32, 16, 4);
+
+    let y = this.renderQuestionPanel(230);
 
     ACTIONS.slice(0, 8).forEach((item, idx) => {
       const col = idx % 2;

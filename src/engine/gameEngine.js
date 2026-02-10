@@ -13,6 +13,7 @@ const { recordClue, runInference, ensureNotebook } = require('./clues');
 const { initAchievements, evaluateAchievements, unlock } = require('./achievements');
 const { buildEndingShareCard, buildChallengeShareCard, guestEntry } = require('./wechat');
 const { parseCustomInput, buildQuestionSuggestions } = require('./intent');
+const { generateBackstory } = require('./backstory');
 
 function createNewState() {
   const scenario = loadScenario('the_haunting');
@@ -50,10 +51,12 @@ function applyInitialItems(state, scenario) {
   startingItemsFromScenario(scenario).forEach((item) => addItem(state, item));
 }
 
-function finalizeDraftSelection(state) {
+async function finalizeDraftSelection(state) {
   const scenario = loadScenario(state.scenario_id);
   const idx = state.selected_draft_idx == null ? 0 : state.selected_draft_idx;
-  state.investigators = [finalizeCharacter(state.character_drafts[idx], 'p1')];
+  const picked = finalizeCharacter(state.character_drafts[idx], 'p1');
+  picked.background_story = await generateBackstory(picked);
+  state.investigators = [picked];
   applyInitialItems(state, scenario);
   state.phase = 'in_game';
   state.character_drafts = [];
@@ -174,7 +177,7 @@ async function nextTurn(state, playerAction) {
       const idx = state.selected_draft_idx == null ? 0 : state.selected_draft_idx;
       adjustAttributeBalance(state.character_drafts[idx], playerAction.plus, playerAction.minus);
     }
-    if (playerAction.type === 'confirm_draft') finalizeDraftSelection(state);
+    if (playerAction.type === 'confirm_draft') await finalizeDraftSelection(state);
     saveGame(state);
     return state;
   }
