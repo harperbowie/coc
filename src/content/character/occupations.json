@@ -1,0 +1,5 @@
+[
+  {"name": "记者", "skill_bonus": {"Library Use": 20, "Psychology": 10}},
+  {"name": "私家侦探", "skill_bonus": {"Spot Hidden": 20, "Fighting (Brawl)": 10}},
+  {"name": "医生", "skill_bonus": {"First Aid": 25, "Psychology": 10}}
+]

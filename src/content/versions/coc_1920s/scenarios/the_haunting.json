@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "id": "the_haunting",
+    "name": "鬼屋疑云",
+    "difficulty": "normal",
+    "tags": ["调查", "恐怖", "经典"]
+  },
+  "setup": {
+    "start_location_id": "office",
+    "start_time": "1924-10-12 19:30",
+    "objective": "调查Corbitt House并确认异常源头"
+  },
+  "gm_only": {
+    "truth": "地下室封印中的实体会在午夜后主动诱导调查员分散。"
+  },
+  "locations": [
+    {
+      "id": "office",
+      "name": "事务所",
+      "description": "昏黄灯光下，委托书摊开在桌面，雨水敲打窗沿。",
+      "connected": ["library", "house"]
+    },
+    {
+      "id": "library",
+      "name": "市立图书馆",
+      "description": "旧报纸与档案卷宗堆成墙，空气里有霉味。",
+      "connected": ["office", "house"]
+    },
+    {
+      "id": "house",
+      "name": "Corbitt House",
+      "description": "门廊木板略有下陷，二楼窗后像有人影短暂停留。",
+      "connected": ["office", "library", "basement"]
+    },
+    {
+      "id": "basement",
+      "name": "地下室",
+      "description": "潮湿砖墙渗出黑色水痕，地面刻痕构成不规则圆环。",
+      "connected": ["house"]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "landlord",
+      "name": "Knott先生",
+      "location_id": "office",
+      "attitude": "neutral",
+      "knowledge": ["曾有租客在屋内失踪", "午夜常有杂音"]
+    }
+  ],
+  "clues": [
+    {
+      "id": "news_1908",
+      "name": "1908旧报",
+      "location_id": "library",
+      "core": true,
+      "description": "报道提及Corbitt家族与异端仪式。"
+    },
+    {
+      "id": "basement_mark",
+      "name": "地下室刻痕",
+      "location_id": "basement",
+      "core": true,
+      "description": "刻痕与档案中的图样一致。"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "night_whisper",
+      "trigger": { "time_clock_gte": 3, "location_id": "house" },
+      "effect": { "san_check": { "loss_success": 1, "loss_fail": 1 } },
+      "text": "你听见墙后有持续低语，像在重复你的名字。"
+    }
+  ],
+  "endings": [
+    {
+      "id": "seal_success",
+      "conditions": ["has:news_1908", "has:basement_mark", "truth_progress_gte:80"],
+      "result": "你们以代价封印了异常，城中暂得平静。"
+    },
+    {
+      "id": "collapse",
+      "conditions": ["any_san_lte:0"],
+      "result": "队伍在无形恐惧中崩溃，调查终止。"
+    }
+  ]
+}
