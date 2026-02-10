@@ -1,15 +1,22 @@
-# CoC Multiplayer Run (WeChat Mini Game JS)
+# CoC WeChat MiniGame（单机商用版骨架）
 
-基于 `cocai.md` 方案实现的微信小游戏 JavaScript 版本骨架与核心玩法循环。
+本项目依据 `cocai.md` 实现微信小游戏 JavaScript 版本，除联机后端外，覆盖可商用单机玩法闭环。
 
-## 目录
+## 已实现模块
 
-- `game.js`：微信小游戏入口
-- `src/content`：三层内容系统（world/keeper_prompt/scenario）
-- `src/engine`：规则引擎、检定、AI约束、存档、威胁推进
-- `src/ui`：Canvas UI渲染与输入
-- `src/net`：联机接口预留
+- 三层内容系统：`world.json` / `keeper_prompt.json` / `scenario`。
+- 角色卡三选一：20x姓氏+20x男女名、5职业、20经历标签、年龄修正、±5属性调配。
+- 核心规则：D100 六档判定、检定修正、对抗检定、简化战斗(DEX先攻/伤害骰/目标选择)。
+- SAN系统：4级恐怖损失、临时疯狂/不定疯狂/恐惧症、休息恢复。
+- NPC互动：五级态度、秘密防泄露、条件给线索。
+- 线索系统：笔记本、关系图数据、自动推理解锁。
+- 威胁推进+结局判定：time_clock / exposure / truth_progress。
+- AI集成：五层输入、DeepSeek调用、输出约束校验、兜底叙述。
+- 记忆优化：RawLog -> Summary -> CanonFacts + token压缩。
+- 微信能力：游客秒进、可选登录接口、结局分享卡/挑战卡。
+- 成就系统：20成就（含自动评估）。
+- 存档系统：6类核心状态 + 日志压缩。
 
 ## 运行
 
-在微信开发者工具中导入该目录（小游戏项目）即可运行。
+在微信开发者工具中以 **小游戏项目** 导入本目录。

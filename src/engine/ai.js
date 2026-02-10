@@ -1,4 +1,6 @@
-const leakKeywords = ['truth', 'gm_only', '真相是', '幕后'];
+const leakKeywords = ['gm_only', 'truth', '真相是', '幕后', '剧透'];
+
+const SUGGESTED_MODIFIERS = new Set([-20, -10, 10, 20]);
 
 function buildAIInput({ keeperPrompt, world, scenario, state, roundContext }) {
   return {
@@ -11,34 +13,50 @@ function buildAIInput({ keeperPrompt, world, scenario, state, roundContext }) {
     },
     current_state: {
       round: state.progress.current_round,
-      investigators: state.investigators.map((i) => ({ id: i.id, name: i.name, SAN: i.derived.SAN, HP: i.derived.HP })),
+      investigators: state.investigators.map((i) => ({
+        id: i.id,
+        name: i.name,
+        HP: i.derived.HP,
+        SAN: i.derived.SAN,
+        conditions: i.conditions,
+      })),
       threat_state: state.threat_state,
-      recent_facts: state.ai_memory.canon_facts.slice(-8),
+      recent_facts: state.ai_memory.canon_facts.slice(-10),
     },
     this_round: roundContext,
   };
 }
 
+function validateSuggestions(output) {
+  if (!output.suggested_modifiers) return true;
+  return output.suggested_modifiers.every((m) => SUGGESTED_MODIFIERS.has(m.modifier));
+}
+
 function validateAIOutput(output, context) {
   const narrative = output && output.narrative ? output.narrative : '';
+  if (!narrative || narrative.length < 20) return false;
   if (leakKeywords.some((k) => narrative.includes(k))) return false;
-  if (/HP|SAN|技能.*\d+/.test(narrative)) return false;
+  if (/HP\s*[+-]|SAN\s*[+-]|技能值/.test(narrative)) return false;
+  if (!validateSuggestions(output)) return false;
+
   const defined = new Set([
     ...context.scenario.locations.map((x) => x.name),
     ...context.scenario.npcs.map((x) => x.name),
+    ...context.scenario.clues.map((x) => x.name),
   ]);
   const mentions = narrative.match(/[A-Za-z\u4e00-\u9fa5]{2,}/g) || [];
-  const unknownHeavy = mentions.filter((m) => m.length >= 6 && !defined.has(m));
-  return unknownHeavy.length < 5;
+  const unknownLong = mentions.filter((m) => m.length >= 8 && !defined.has(m));
+  return unknownLong.length < 4;
 }
 
-function fallbackNarrative(state) {
+function fallbackNarrative(context) {
+  const loc = context.scenario.locations.find((l) => l.id === context.state.progress.current_location_id);
   return {
-    narrative: `你站在${state.progress.current_location_id}，空气中有轻微的潮湿与霉味。你们的每一步都让未知更近。`,
+    narrative: `你在${loc ? loc.name : context.state.progress.current_location_id}继续调查，空气中的霉味与潮湿让每一次呼吸都带着紧张。你意识到时间正在推动某种看不见的进程。`,
     suggestions: [
-      { text: '观察周边异常痕迹', type: 'investigate' },
-      { text: '向现场NPC提问', type: 'ask' },
-      { text: '整理线索并制定下一步', type: 'investigate' },
+      { text: '检查环境异常痕迹', type: 'investigate' },
+      { text: '与在场NPC继续交谈', type: 'ask' },
+      { text: '整理笔记中的线索关系', type: 'investigate' },
     ],
   };
 }
@@ -46,29 +64,22 @@ function fallbackNarrative(state) {
 function callDeepSeek(payload) {
   return new Promise((resolve) => {
     const apiKey = wx.getStorageSync('DEEPSEEK_API_KEY') || '';
-    if (!apiKey) {
-      resolve({ ok: false, reason: 'missing_api_key' });
-      return;
-    }
+    if (!apiKey) return resolve({ ok: false, reason: 'missing_api_key' });
+
     wx.request({
       url: 'https://api.deepseek.com/chat/completions',
       method: 'POST',
-      header: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
+      header: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       data: {
         model: 'deepseek-chat',
         messages: [
-          { role: 'system', content: payload.system_role },
+          { role: 'system', content: `${payload.system_role}\n输出必须是JSON: { narrative, suggestions, suggested_modifiers? }` },
           { role: 'user', content: JSON.stringify(payload) },
         ],
-        temperature: 0.7,
+        temperature: 0.65,
       },
       success: (res) => {
-        const content = res.data && res.data.choices && res.data.choices[0] && res.data.choices[0].message
-          ? res.data.choices[0].message.content
-          : '';
+        const content = res?.data?.choices?.[0]?.message?.content || '';
         resolve({ ok: true, content });
       },
       fail: () => resolve({ ok: false, reason: 'network_error' }),
@@ -81,15 +92,15 @@ function parseAIContent(content) {
     const parsed = JSON.parse(content);
     if (parsed.narrative) return parsed;
   } catch (e) {}
-  return { narrative: content || '黑暗中有东西正在注视你们。', suggestions: [] };
+  return { narrative: content || '', suggestions: [] };
 }
 
 async function generateNarrative(context) {
   const payload = buildAIInput(context);
   const res = await callDeepSeek(payload);
-  if (!res.ok) return fallbackNarrative(context.state);
+  if (!res.ok) return fallbackNarrative(context);
   const output = parseAIContent(res.content);
-  if (!validateAIOutput(output, context)) return fallbackNarrative(context.state);
+  if (!validateAIOutput(output, context)) return fallbackNarrative(context);
   return output;
 }
 

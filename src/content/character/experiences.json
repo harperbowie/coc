@@ -1,5 +1,22 @@
 [
-  "曾在战场上见过无法解释的尸体现象",
-  "参与过一次失败的降灵会",
-  "家族收藏过一本被封存的神秘学笔记"
+  {"id": "war_medal", "text": "曾在战场负伤并获勋", "effects": {"STR": 5, "SAN": -3}, "exclusive_with": ["bookish"]},
+  {"id": "failed_seance", "text": "参与过一次失败的降灵会", "effects": {"Occult": 10, "SAN": -2}},
+  {"id": "forbidden_book", "text": "读过一本被封禁的神秘书籍", "effects": {"Library Use": 10, "Occult": 10}},
+  {"id": "bookish", "text": "埋首书堆多年", "effects": {"EDU": 5, "STR": -5}, "exclusive_with": ["war_medal"]},
+  {"id": "street_kid", "text": "少年时期在街头长大", "effects": {"Stealth": 10, "Psychology": 5}},
+  {"id": "night_shift", "text": "长期夜班导致睡眠问题", "effects": {"CON": -5, "Listen": 10}},
+  {"id": "church_choir", "text": "教堂唱诗班出身", "effects": {"Persuade": 10, "APP": 5}},
+  {"id": "crime_scene", "text": "见过太多血腥案发现场", "effects": {"SAN": -4, "First Aid": 10}},
+  {"id": "boxing_club", "text": "拳击俱乐部常客", "effects": {"Fighting (Brawl)": 15, "DEX": 5}},
+  {"id": "archivist", "text": "档案馆兼职修复员", "effects": {"Library Use": 10, "History": 10}},
+  {"id": "sailor", "text": "远洋航行经验", "effects": {"CON": 5, "Navigate": 10}},
+  {"id": "debt", "text": "欠下高利贷", "effects": {"cash": -15, "Intimidate": 5}},
+  {"id": "rich_family", "text": "家族背景殷实", "effects": {"cash": 50, "APP": 5}},
+  {"id": "lab_assistant", "text": "实验室助理", "effects": {"Science (Chemistry)": 10, "EDU": 5}},
+  {"id": "library_friend", "text": "在图书馆有熟人", "effects": {"Library Use": 10, "Credit Rating": 10}},
+  {"id": "alcoholic", "text": "长期酗酒", "effects": {"POW": -5, "CON": -5, "Intimidate": 10}},
+  {"id": "ex_cop", "text": "曾在警局任职", "effects": {"Firearms (Handgun)": 10, "Law": 10}},
+  {"id": "occult_club", "text": "神秘学社团成员", "effects": {"Occult": 15, "Psychology": 5}},
+  {"id": "orphan", "text": "孤儿院长大", "effects": {"POW": 5, "Persuade": 5}},
+  {"id": "stage_actor", "text": "舞台剧演员", "effects": {"APP": 5, "Fast Talk": 10}}
 ]
