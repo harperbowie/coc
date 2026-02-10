@@ -1,0 +1,12 @@
+{
+  "description": "CoC WeChat MiniGame",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "game",
+  "libVersion": "2.33.0"
+}
