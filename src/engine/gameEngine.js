@@ -12,6 +12,7 @@ const { talkToNpc } = require('./npc');
 const { recordClue, runInference, ensureNotebook } = require('./clues');
 const { initAchievements, evaluateAchievements, unlock } = require('./achievements');
 const { buildEndingShareCard, buildChallengeShareCard, guestEntry } = require('./wechat');
+const { parseCustomInput, buildQuestionSuggestions } = require('./intent');
 
 function createNewState() {
   const scenario = loadScenario('the_haunting');
@@ -39,6 +40,7 @@ function createNewState() {
     finished: false,
     ending: '',
     meta: { share_cards: {}, achievements: [] },
+    ui: { suggestion_expanded: false, question_suggestions: [] },
   };
 }
 
@@ -56,6 +58,7 @@ function finalizeDraftSelection(state) {
   state.phase = 'in_game';
   state.character_drafts = [];
   initAchievements(state);
+  state.ui.question_suggestions = buildQuestionSuggestions(state);
 }
 
 function checkEndings(state, scenario) {
@@ -181,18 +184,25 @@ async function nextTurn(state, playerAction) {
   const hooks = [];
   let failedChecks = 0;
 
-  if (playerAction.type === 'move') processMove(state, scenario, playerAction.target);
-  if (playerAction.type === 'check') processSkillAction(state, scenario, playerAction, checks);
-  if (playerAction.type === 'talk') processNpcAction(state, scenario, playerAction, hooks);
-  if (playerAction.type === 'use_item') processUseItem(state, playerAction);
-  if (playerAction.type === 'combat') processCombat(state, scenario, playerAction, checks, hooks);
-  if (playerAction.type === 'rest') {
+  let resolvedAction = playerAction;
+  if (playerAction.type === 'custom_input') {
+    const parsed = parseCustomInput(playerAction.text, state);
+    resolvedAction = parsed.action;
+    hooks.push(parsed.explain);
+  }
+
+  if (resolvedAction.type === 'move') processMove(state, scenario, resolvedAction.target);
+  if (resolvedAction.type === 'check') processSkillAction(state, scenario, resolvedAction, checks);
+  if (resolvedAction.type === 'talk') processNpcAction(state, scenario, resolvedAction, hooks);
+  if (resolvedAction.type === 'use_item') processUseItem(state, resolvedAction);
+  if (resolvedAction.type === 'combat') processCombat(state, scenario, resolvedAction, checks, hooks);
+  if (resolvedAction.type === 'rest') {
     recoverSanByRest(state.investigators[0]);
     hooks.push('你短暂休息，试图让神经回到可控状态。');
   }
 
   failedChecks = checks.filter((x) => ['fail', 'fumble'].includes(x.level)).length;
-  advanceThreat(state, { failedChecks, combat: playerAction.type === 'combat', resting: playerAction.type === 'rest' });
+  advanceThreat(state, { failedChecks, combat: resolvedAction.type === 'combat', resting: resolvedAction.type === 'rest' });
 
   processSanity(state, scenario, checks, hooks);
   const unlockedInference = runInference(state, scenario);
@@ -204,13 +214,13 @@ async function nextTurn(state, playerAction) {
     world: loadVersion('coc_1920s').world,
     scenario,
     state,
-    roundContext: { player_actions: [playerAction], check_results: checks, hooks },
+    roundContext: { player_actions: [resolvedAction], check_results: checks, hooks },
   });
 
   state.suggestions = aiOutput.suggestions || [];
-  state.log.push({ round: state.progress.current_round, action: playerAction, checks, narrative: aiOutput.narrative, hooks });
+  state.log.push({ round: state.progress.current_round, action: resolvedAction, checks, narrative: aiOutput.narrative, hooks });
   pushRawLog(state, { round: state.progress.current_round, player_inputs: [JSON.stringify(playerAction)], ai_narrative: aiOutput.narrative });
-  state.ai_memory.turn_summaries.push(summarizeRound({ round: state.progress.current_round, player_inputs: [playerAction.type], discoveries: state.clue_progress.discovered_clues.slice(-3), threat_snapshot: state.threat_state }));
+  state.ai_memory.turn_summaries.push(summarizeRound({ round: state.progress.current_round, player_inputs: [resolvedAction.type], discoveries: state.clue_progress.discovered_clues.slice(-3), threat_snapshot: state.threat_state }));
 
   checkEndings(state, scenario);
   evaluateAchievements(state);
@@ -222,6 +232,7 @@ async function nextTurn(state, playerAction) {
     state.meta.share_cards.challenge = buildChallengeShareCard();
   }
 
+  state.ui.question_suggestions = buildQuestionSuggestions(state);
   compressMemory(state);
   state.progress.current_round += 1;
   saveGame(state);

@@ -6,8 +6,6 @@ const ACTIONS = [
   { label: '侦查(SH)', action: { type: 'check', skill: 'Spot Hidden' } },
   { label: '图书馆检索', action: { type: 'check', skill: 'Library Use' } },
   { label: '神秘学检定', action: { type: 'check', skill: 'Occult' } },
-  { label: '和房东交谈', action: { type: 'talk', npc_id: 'landlord', intent: 'polite_question' } },
-  { label: '威胁房东', action: { type: 'talk', npc_id: 'landlord', intent: 'threaten' } },
   { label: '战斗（近战）', action: { type: 'combat' } },
   { label: '使用急救包', action: { type: 'use_item', item_id: 'first_aid_kit' } },
   { label: '休息', action: { type: 'rest' } },
@@ -23,7 +21,6 @@ class CanvasUI {
     this.buttons = [];
     this.pending = false;
     this.state = null;
-    this.scrollY = 0;
     wx.onTouchStart((e) => this.handleTouch(e));
   }
 
@@ -32,22 +29,51 @@ class CanvasUI {
     this.render();
   }
 
+  openKeyboardInput() {
+    if (!wx.showKeyboard) return;
+    wx.showKeyboard({
+      defaultValue: '',
+      maxLength: 140,
+      confirmType: 'done',
+      success: () => {
+        wx.onKeyboardConfirm(async (res) => {
+          if (!res || !res.value || this.pending) return;
+          this.pending = true;
+          const next = await this.engine.nextTurn(this.state, { type: 'custom_input', text: res.value });
+          this.pending = false;
+          this.setState(next);
+          wx.hideKeyboard && wx.hideKeyboard();
+        });
+      },
+    });
+  }
+
   async handleTouch(e) {
     if (this.pending || !this.state) return;
     const t = e.touches[0];
     const hit = this.buttons.find((b) => t.clientX >= b.x && t.clientX <= b.x + b.w && t.clientY >= b.y && t.clientY <= b.y + b.h);
     if (!hit) return;
+    if (hit.action && hit.action.type === '__toggle_suggestions__') {
+      this.state.ui = this.state.ui || {};
+      this.state.ui.suggestion_expanded = !this.state.ui.suggestion_expanded;
+      this.render();
+      return;
+    }
+    if (hit.action && hit.action.type === '__open_input__') {
+      this.openKeyboardInput();
+      return;
+    }
     this.pending = true;
     const next = await this.engine.nextTurn(this.state, hit.action);
     this.pending = false;
     this.setState(next);
   }
 
-  drawButton(x, y, w, h, text, action, color = '#1f2a44') {
+  drawButton(x, y, w, h, text, action, color = '#1f2a44', font = '15px sans-serif') {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(x, y, w, h);
     this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '15px sans-serif';
+    this.ctx.font = font;
     this.ctx.fillText(text, x + 8, y + 22);
     this.buttons.push({ x, y, w, h, action });
   }
@@ -73,6 +99,29 @@ class CanvasUI {
     this.drawButton(16, y + 48, width - 32, 40, '确认角色并进入游戏', { type: 'confirm_draft' }, '#3c7a44');
   }
 
+  renderQuestionPanel(yStart) {
+    const { ctx, width } = this;
+    let y = yStart;
+    const expanded = !!(this.state.ui && this.state.ui.suggestion_expanded);
+    this.drawButton(16, y, width - 32, 30, expanded ? '💡 收起建议提问' : '💡 点击查看建议提问', { type: '__toggle_suggestions__' }, '#2f3f62', '14px sans-serif');
+    y += 36;
+
+    const suggestions = (this.state.ui && this.state.ui.question_suggestions) || [];
+    if (expanded) {
+      suggestions.slice(0, 4).forEach((s, idx) => {
+        this.drawButton(24, y, width - 48, 28, `${idx + 1}. ${s.text}`, s.action, '#344d7a', '13px sans-serif');
+        y += 32;
+      });
+    }
+
+    this.drawButton(16, y + 2, width - 32, 32, '✍️ 自由输入行动/提问', { type: '__open_input__' }, '#5a3f77');
+    y += 40;
+    ctx.fillStyle = '#95a9d1';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('示例：问房东这栋房子的历史 / 去图书馆查1908旧报 / 攻击它', 16, y + 8);
+    return y + 16;
+  }
+
   renderGame() {
     const { ctx, width, height } = this;
     const inv = this.state.investigators[0];
@@ -81,38 +130,32 @@ class CanvasUI {
 
     ctx.fillStyle = '#d8d8e0';
     ctx.font = '18px sans-serif';
-    ctx.fillText('CoC 跑团系统（商用单机版）', 16, 28);
+    ctx.fillText('CoC 跑团系统（互动增强）', 16, 28);
 
     ctx.font = '13px sans-serif';
     ctx.fillText(`${inv.name} | ${inv.occupation}`, 16, 50);
     ctx.fillText(`回合:${this.state.progress.current_round} 地点:${this.state.progress.current_location_id}`, 16, 68);
     ctx.fillText(`SAN:${inv.derived.SAN}/${inv.derived.SAN_max} HP:${inv.derived.HP}/${inv.derived.HP_max} MP:${inv.derived.MP}`, 16, 86);
-    ctx.fillText(`威胁 时钟:${this.state.threat_state.time_clock} 暴露:${this.state.threat_state.exposure_level} 真相:${this.state.threat_state.truth_progress}`, 16, 104);
-    ctx.fillText(`线索:${this.state.clue_progress.discovered_clues.length} 推理:${this.state.clue_progress.inferences.length} 成就:${(this.state.meta.achievements || []).filter(a=>a.unlocked).length}`, 16, 122);
 
     const latest = this.state.log[this.state.log.length - 1];
     const narrative = latest ? latest.narrative : '雨夜里，你们收到第一份委托。';
     ctx.fillStyle = '#a6accd';
-    this.wrapText(narrative, 16, 148, width - 32, 18, 5);
+    this.wrapText(narrative, 16, 112, width - 32, 18, 4);
 
-    const notes = (this.state.clue_progress.notebook || []).slice(-2).map((x) => `• ${x.name}`).join('  ');
-    ctx.fillStyle = '#87a9d8';
-    this.wrapText(`最新线索: ${notes || '暂无'}`, 16, 244, width - 32, 18, 2);
+    let y = this.renderQuestionPanel(188);
 
-    let y = 286;
-    ACTIONS.forEach((item, idx) => {
+    ACTIONS.slice(0, 8).forEach((item, idx) => {
       const col = idx % 2;
       const row = Math.floor(idx / 2);
       const bx = 16 + col * ((width - 40) / 2 + 8);
-      const by = y + row * 40;
+      const by = y + row * 34;
       const bw = (width - 40) / 2;
-      this.drawButton(bx, by, bw, 32, item.label, item.action);
+      this.drawButton(bx, by, bw, 28, item.label, item.action, '#243654', '13px sans-serif');
     });
 
     if (this.state.finished) {
       ctx.fillStyle = '#ffdd88';
-      this.wrapText(`结局: ${this.state.ending}`, 16, height - 110, width - 32, 18, 2);
-      this.wrapText(this.state.meta.share_cards.ending || '', 16, height - 72, width - 32, 16, 3);
+      this.wrapText(`结局: ${this.state.ending}`, 16, height - 90, width - 32, 16, 2);
     }
   }
 
