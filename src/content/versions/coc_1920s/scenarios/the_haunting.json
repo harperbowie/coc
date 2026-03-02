@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "id": "the_haunting",
+    "name": "鬼屋疑云",
+    "difficulty": "normal",
+    "tags": ["调查", "恐怖", "经典"],
+    "recommended_players": 1,
+    "estimated_rounds": 10
+  },
+  "setup": {
+    "start_location_id": "office",
+    "start_time": "1924-10-12 19:30",
+    "objective": "调查Corbitt House并确认异常源头",
+    "seed_items": ["笔记本", "手电筒", "左轮手枪"]
+  },
+  "gm_only": {
+    "truth": "地下室封印中的实体会在午夜后主动诱导调查员分散，并利用恐惧扩大暴露。",
+    "bad_end_hint": "若在缺失关键线索下强行封印，将触发灾难性结局。"
+  },
+  "locations": [
+    {
+      "id": "office",
+      "name": "事务所",
+      "description": "昏黄灯光下，委托书摊开在桌面，雨水敲打窗沿。",
+      "connected": ["library", "house"],
+      "tags": ["safe", "indoor"],
+      "checks": [{"skill": "Psychology", "difficulty": "normal", "success": ["clue_client_anxiety"]}]
+    },
+    {
+      "id": "library",
+      "name": "市立图书馆",
+      "description": "旧报纸与档案卷宗堆成墙，空气里有霉味。",
+      "connected": ["office", "house"],
+      "tags": ["archive"],
+      "checks": [{"skill": "Library Use", "difficulty": "hard", "success": ["news_1908"]}]
+    },
+    {
+      "id": "house",
+      "name": "Corbitt House",
+      "description": "门廊木板略有下陷，二楼窗后像有人影短暂停留。",
+      "connected": ["office", "library", "basement"],
+      "tags": ["haunted", "indoor"],
+      "checks": [{"skill": "Spot Hidden", "difficulty": "normal", "success": ["clue_blood_mark"]}]
+    },
+    {
+      "id": "basement",
+      "name": "地下室",
+      "description": "潮湿砖墙渗出黑色水痕，地面刻痕构成不规则圆环。",
+      "connected": ["house"],
+      "tags": ["ritual", "danger"],
+      "checks": [{"skill": "Occult", "difficulty": "hard", "success": ["basement_mark"]}]
+    }
+  ],
+  "npcs": [
+    {
+      "id": "landlord",
+      "name": "Knott先生",
+      "location_id": "office",
+      "personality": "谨慎、胆小",
+      "attitude": "neutral",
+      "knowledge": ["曾有租客在屋内失踪", "午夜常有杂音"],
+      "secrets": ["Corbitt曾进行献祭仪式"],
+      "lies": ["我从未进过地下室"],
+      "give_clues": {
+        "clue_house_history": {"condition": "attitude>=friendly"}
+      },
+      "reactions": {
+        "polite_question": 1,
+        "threaten": -2,
+        "share_evidence": 1
+      }
+    }
+  ],
+  "clues": [
+    {"id": "clue_client_anxiety", "name": "委托人焦虑", "location_id": "office", "core": false, "type": "npc", "description": "委托人反复提到午夜钟声后出现幻听。"},
+    {"id": "news_1908", "name": "1908旧报", "location_id": "library", "core": true, "type": "document", "description": "报道提及Corbitt家族与异端仪式。"},
+    {"id": "clue_house_history", "name": "房屋旧史", "location_id": "office", "core": false, "type": "npc", "description": "前住户失踪后，房屋曾被短期封锁。"},
+    {"id": "clue_blood_mark", "name": "地板血痕", "location_id": "house", "core": false, "type": "scene", "description": "走廊地板缝里残留褐色污渍。"},
+    {"id": "basement_mark", "name": "地下室刻痕", "location_id": "basement", "core": true, "type": "symbol", "description": "刻痕与档案中的图样一致。"}
+  ],
+  "clue_graph": {
+    "nodes": ["news_1908", "clue_house_history", "basement_mark", "inference_ritual_chain"],
+    "edges": [
+      {"from": "news_1908", "to": "inference_ritual_chain"},
+      {"from": "basement_mark", "to": "inference_ritual_chain"},
+      {"from": "clue_house_history", "to": "inference_ritual_chain"}
+    ]
+  },
+  "inference_rules": [
+    {
+      "id": "inference_ritual_chain",
+      "requires": ["news_1908", "basement_mark"],
+      "unlock_text": "你开始意识到，屋内异常并非闹鬼，而是持续性的仪式残留。",
+      "effects": {"truth_progress": 15, "open_thread_close": ["thread_news_1908", "thread_basement_mark"]}
+    }
+  ],
+  "items": [
+    {"id": "first_aid_kit", "name": "急救包", "type": "Consumable", "uses": 3, "effect": {"heal": 2}},
+    {"id": "revolver", "name": "左轮手枪", "type": "Equipment", "damage": "1D10", "skill": "Firearms (Handgun)"},
+    {"id": "basement_key", "name": "地下室钥匙", "type": "Key Item", "unlimited": true, "trigger": {"location": "house", "action": "unlock_basement"}},
+    {"id": "notebook", "name": "笔记本", "type": "Utility", "effect": {"log_bonus": true}}
+  ],
+  "san_events": [
+    {"id": "night_whisper", "trigger": {"time_clock_gte": 3, "location_id": "house"}, "level": "minor", "text": "你听见墙后有持续低语，像在重复你的名字。"},
+    {"id": "ritual_echo", "trigger": {"location_id": "basement", "needs_clue": "basement_mark"}, "level": "moderate", "text": "刻痕仿佛在微微蠕动，像是活体皮肤上的伤口。"}
+  ],
+  "encounters": [
+    {"id": "house_entity", "trigger": {"time_clock_gte": 5, "location_id": "house"}, "enemy": {"name": "潜伏实体", "HP": 8, "DEX": 55, "attack_skill": 45, "damage": "1D4"}}
+  ],
+  "endings": [
+    {"id": "seal_success", "conditions": ["has:news_1908", "has:basement_mark", "truth_progress_gte:80"], "result": "你们以代价封印了异常，城中暂得平静。"},
+    {"id": "false_conclusion", "conditions": ["time_clock_gte:9", "truth_progress_lt:50"], "result": "你们误判了真相，异常在城中扩散。"},
+    {"id": "collapse", "conditions": ["any_san_lte:0"], "result": "队伍在无形恐惧中崩溃，调查终止。"}
+  ]
+}

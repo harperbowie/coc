@@ -1,0 +1,27 @@
+[
+  {
+    "name": "记者",
+    "skill_bonus": {"Library Use": 20, "Psychology": 10, "Persuade": 10},
+    "favored_tags": ["报社线人", "夜间采访", "快笔记录"]
+  },
+  {
+    "name": "私家侦探",
+    "skill_bonus": {"Spot Hidden": 20, "Fighting (Brawl)": 15, "Stealth": 10},
+    "favored_tags": ["街头耳目", "前警局顾问", "枪械训练"]
+  },
+  {
+    "name": "医生",
+    "skill_bonus": {"First Aid": 25, "Psychology": 10, "Science (Medicine)": 15},
+    "favored_tags": ["战地手术", "停尸房值夜", "药剂配制"]
+  },
+  {
+    "name": "教授",
+    "skill_bonus": {"Library Use": 20, "Occult": 15, "History": 15},
+    "favored_tags": ["古文献研究", "学会会员", "拉丁文基础"]
+  },
+  {
+    "name": "警察",
+    "skill_bonus": {"Firearms (Handgun)": 20, "Intimidate": 15, "Spot Hidden": 10},
+    "favored_tags": ["巡夜经验", "审讯技巧", "枪械保养"]
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "version_id": "coc_1920s",
+  "name": "1920年代美国",
+  "description": "禁酒令时期的波士顿，黑帮与神秘学交织。",
+  "era": "1920s",
+  "world_lore": {
+    "time_period": {
+      "year_range": "1920-1929",
+      "historical_context": "禁酒令、爵士时代、经济繁荣前夜",
+      "technology_level": "早期汽车、电话、煤气灯与电灯并存"
+    },
+    "cosmic_horror_principles": {
+      "reality_nature": "人类理性有限，宇宙真相不可知",
+      "horror_source": "未知、失控、人类渺小",
+      "forbidden_knowledge": "接触真相必然付出代价（理智）"
+    },
+    "narrative_guidelines": {
+      "horror_presentation": "暗示优于直接、渐进优于突然",
+      "atmosphere_building": "环境异常→超自然显现→直面恐怖",
+      "player_agency": "玩家选择有意义，但世界不因玩家改变规律"
+    }
+  },
+  "universal_rules": {
+    "physics": "现实世界物理定律",
+    "supernatural": "超自然存在但隐藏，违背常识，代价高昂",
+    "mortality": "调查员脆弱，死亡/疯狂是真实威胁"
+  }
+}
